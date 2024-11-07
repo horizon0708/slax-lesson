@@ -1,7 +1,7 @@
 defmodule SlaxWeb.ChatRoomLive do
   use SlaxWeb, :live_view
 
-  alias Slax.Repo
+  alias Slax.Chat
   alias Slax.Chat.Room
 
   def render(assigns) do
@@ -63,7 +63,7 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def mount(_params, _session, socket) do
-    rooms = Room |> Repo.all()
+    rooms = Chat.list_rooms()
 
     socket
     |> assign(rooms: rooms, hide_topic?: false)
@@ -73,8 +73,8 @@ defmodule SlaxWeb.ChatRoomLive do
   def handle_params(params, _url, socket) do
     room =
       case Map.fetch(params, "id") do
-        {:ok, id} -> Repo.get(Room, id)
-        :error -> List.first(socket.assigns.rooms)
+        {:ok, id} -> Chat.get_room!(id)
+        :error -> Chat.get_first_room!()
       end
 
     socket
