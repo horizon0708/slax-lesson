@@ -19,5 +19,6 @@ defmodule Slax.Chat.Room do
       message: "can only contain lowercase letters, numbers and dashes"
     )
     |> validate_length(:topic, max: 200)
+    |> unsafe_validate_unique(:name, Slax.Repo)
   end
 end
