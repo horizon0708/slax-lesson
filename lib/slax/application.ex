@@ -17,6 +17,7 @@ defmodule Slax.Application do
       # Start a worker by calling: Slax.Worker.start_link(arg)
       # {Slax.Worker, arg},
       # Start to serve requests, typically the last entry
+      SlaxWeb.Presence,
       SlaxWeb.Endpoint
     ]
 
