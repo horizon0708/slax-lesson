@@ -22,7 +22,12 @@ defmodule SlaxWeb.ChatRoomLive do
           <span class="ml-2 leading-none font-medium text-sm">Rooms</span>
         </div>
         <div id="rooms-list">
-          <.room_link :for={room <- @rooms} room={room} active={room.id == @room.id} />
+          <.room_link
+            :for={{room, unread_count} <- @rooms}
+            room={room}
+            active={room.id == @room.id}
+            unread_count={unread_count}
+          />
         </div>
         <button class="group relative flex items-center h-8 text-sm pl-8 pr-3 hover:bg-slate-300 cursor-pointer w-full">
           <.icon name="hero-plus" class="h-4 w-4 relative top-px" />
@@ -199,6 +204,7 @@ defmodule SlaxWeb.ChatRoomLive do
 
   attr :active, :boolean, required: true
   attr :room, Room, required: true
+  attr :unread_count, :integer, required: true
 
   defp room_link(assigns) do
     ~H"""
@@ -213,7 +219,21 @@ defmodule SlaxWeb.ChatRoomLive do
       <span class={["ml-2 leading-none", @active && "font-bold"]}>
         <%= @room.name %>
       </span>
+      <.unread_message_counter count={@unread_count} />
     </.link>
+    """
+  end
+
+  attr :count, :integer, required: true
+
+  defp unread_message_counter(assigns) do
+    ~H"""
+    <span
+      :if={@count > 0}
+      class="flex items-center justify-center bg-blue-500 rounded-full font-medium h-5 px-2 ml-auto text-xs text-white"
+    >
+      <%= @count %>
+    </span>
     """
   end
 
@@ -281,7 +301,7 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def mount(_params, _session, socket) do
-    rooms = Chat.list_joined_rooms(socket.assigns.current_user)
+    rooms = Chat.list_joined_rooms_with_unread_counts(socket.assigns.current_user)
     users = Accounts.list_users()
 
     timezone = get_connect_params(socket)["timezone"]
@@ -291,6 +311,8 @@ defmodule SlaxWeb.ChatRoomLive do
     end
 
     OnlineUsers.subscribe()
+
+    Enum.each(rooms, fn {chat, _} -> Chat.subscribe_to_room(chat) end)
 
     socket
     |> assign(rooms: rooms, timezone: timezone, users: users)
@@ -305,15 +327,11 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def handle_params(params, _url, socket) do
-    if socket.assigns[:room], do: Chat.unsubscribe_from_room(socket.assigns.room)
-
     room =
       case Map.fetch(params, "id") do
         {:ok, id} -> Chat.get_room!(id)
         :error -> Chat.get_first_room!()
       end
-
-    Chat.subscribe_to_room(room)
 
     last_read_id = Chat.get_last_read_id(room, socket.assigns.current_user)
 
@@ -338,6 +356,14 @@ defmodule SlaxWeb.ChatRoomLive do
     |> stream(:messages, messages, reset: true)
     |> assign_message_form(Chat.change_message(%Message{}))
     |> push_event("scroll_messages_to_bottom", %{})
+    |> update(:rooms, fn rooms ->
+      room_id = room.id
+
+      Enum.map(rooms, fn
+        {%Room{id: ^room_id} = room, _} -> {room, 0}
+        other -> other
+      end)
+    end)
     |> then(&{:noreply, &1})
   end
 
@@ -381,7 +407,13 @@ defmodule SlaxWeb.ChatRoomLive do
     current_user = socket.assigns.current_user
     Chat.join_room!(socket.assigns.room, current_user)
     Chat.subscribe_to_room(socket.assigns.room)
-    socket = assign(socket, joined?: true, rooms: Chat.list_joined_rooms(current_user))
+
+    socket =
+      assign(socket,
+        joined?: true,
+        rooms: Chat.list_joined_rooms_with_unread_counts(current_user)
+      )
+
     {:noreply, socket}
   end
 
@@ -390,10 +422,28 @@ defmodule SlaxWeb.ChatRoomLive do
       Chat.update_last_read_id(message.room, socket.assigns.current_user)
     end
 
+    room = socket.assigns.room
+
     socket =
-      socket
-      |> stream_insert(:messages, message)
-      |> push_event("scroll_messages_to_bottom", %{})
+      cond do
+        message.room_id == room.id ->
+          Chat.update_last_read_id(room, socket.assigns.current_user)
+
+          socket
+          |> stream_insert(:messages, message)
+          |> push_event("scroll_messages_to_bottom", %{})
+
+        message.user_id != socket.assigns.current_user.id ->
+          update(socket, :rooms, fn rooms ->
+            Enum.map(rooms, fn
+              {%Room{id: id} = room, count} when id == message.room_id -> {room, count + 1}
+              other -> other
+            end)
+          end)
+
+        true ->
+          socket
+      end
 
     {:noreply, socket}
   end
