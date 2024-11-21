@@ -34,7 +34,15 @@ defmodule SlaxWeb.ChatRoomLive do
           <span class="ml-2 leading-none">Add rooms</span>
           <div class="hidden group-focus:block cursor-default absolute top-8 right-2 bg-white border-slate-200 border py-3 rounded-lg">
             <div class="w-full text-left">
-              <.create_new_room_button />
+              <%!-- create new room button --%>
+              <div class="hover:bg-sky-600">
+                <div
+                  class="cursor-pointer whitespace-nowrap text-gray-800 hover:text-white px-6 py-1 block"
+                  phx-click={JS.navigate(~p"/rooms/#{@room}/new")}
+                >
+                  Create a new room
+                </div>
+              </div>
               <div class="hover:bg-sky-600">
                 <div
                   phx-click={JS.navigate(~p"/rooms")}
@@ -200,8 +208,12 @@ defmodule SlaxWeb.ChatRoomLive do
         </div>
       </div>
     </div>
-    <.modal id="new-room-modal">
-      <.header>New chat room</.header>
+    <.modal
+      id="new-room-modal"
+      show={@live_action == :new}
+      on_cancel={JS.navigate(~p"/rooms/#{@room}")}
+    >
+      <.header>New chat room <%= @live_action %></.header>
       <.simple_form
         for={@new_room_form}
         id="room-form"
@@ -215,19 +227,6 @@ defmodule SlaxWeb.ChatRoomLive do
         </:actions>
       </.simple_form>
     </.modal>
-    """
-  end
-
-  defp create_new_room_button(assigns) do
-    ~H"""
-    <div class="hover:bg-sky-600">
-      <div
-        class="cursor-pointer whitespace-nowrap text-gray-800 hover:text-white px-6 py-1 block"
-        phx-click={show_modal("new-room-modal")}
-      >
-        Create a new room
-      </div>
-    </div>
     """
   end
 
@@ -363,6 +362,8 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def mount(_params, _session, socket) do
+    IO.inspect("mounted!")
+    IO.inspect(socket.assigns.live_action)
     rooms = Chat.list_joined_rooms_with_unread_counts(socket.assigns.current_user)
     users = Accounts.list_users()
 
@@ -394,6 +395,9 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def handle_params(params, _url, socket) do
+    IO.inspect("handle_params!")
+    IO.inspect(socket.assigns.live_action)
+
     room =
       case Map.fetch(params, "id") do
         {:ok, id} -> Chat.get_room!(id)
