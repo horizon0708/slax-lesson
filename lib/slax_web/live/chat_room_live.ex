@@ -34,6 +34,7 @@ defmodule SlaxWeb.ChatRoomLive do
           <span class="ml-2 leading-none">Add rooms</span>
           <div class="hidden group-focus:block cursor-default absolute top-8 right-2 bg-white border-slate-200 border py-3 rounded-lg">
             <div class="w-full text-left">
+              <.create_new_room_button />
               <div class="hover:bg-sky-600">
                 <div
                   phx-click={JS.navigate(~p"/rooms")}
@@ -197,6 +198,23 @@ defmodule SlaxWeb.ChatRoomLive do
             </.link>
           </div>
         </div>
+      </div>
+    </div>
+    <.modal id="new-room-modal">
+      <.header>New chat room</.header>
+      (Form goes here)
+    </.modal>
+    """
+  end
+
+  defp create_new_room_button(assigns) do
+    ~H"""
+    <div class="hover:bg-sky-600">
+      <div
+        class="cursor-pointer whitespace-nowrap text-gray-800 hover:text-white px-6 py-1 block"
+        phx-click={show_modal("new-room-modal")}
+      >
+        Create a new room
       </div>
     </div>
     """
