@@ -71,7 +71,7 @@ defmodule SlaxWeb.UserSettingsLive do
           </.simple_form>
         </div>
       </div>
-    </div>j
+    </div>
     """
   end
 
