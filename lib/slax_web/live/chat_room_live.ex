@@ -353,8 +353,6 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def mount(_params, _session, socket) do
-    IO.inspect("mounted!")
-    IO.inspect(socket.assigns.live_action)
     rooms = Chat.list_joined_rooms_with_unread_counts(socket.assigns.current_user)
     users = Accounts.list_users()
 
@@ -378,7 +376,7 @@ defmodule SlaxWeb.ChatRoomLive do
         :unread_marker -> "messages-unread-marker"
       end
     )
-    |> then(&{:ok, &1})
+    |> ok()
   end
 
   defp assign_room_form(socket, changeset) do
@@ -426,13 +424,13 @@ defmodule SlaxWeb.ChatRoomLive do
         other -> other
       end)
     end)
-    |> then(&{:noreply, &1})
+    |> noreply()
   end
 
   def handle_event("toggle-topic", _params, socket) do
     socket
     |> update(:hide_topic?, &(!&1))
-    |> then(&{:noreply, &1})
+    |> noreply()
   end
 
   def handle_event("submit-message", %{"message" => message_params}, socket) do
@@ -451,7 +449,7 @@ defmodule SlaxWeb.ChatRoomLive do
         socket
       end
 
-    {:noreply, socket}
+    noreply(socket)
   end
 
   def handle_event("validate-message", %{"message" => message_params}, socket) do
