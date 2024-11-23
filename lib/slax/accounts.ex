@@ -358,4 +358,13 @@ defmodule Slax.Accounts do
       {:error, :user, changeset, _} -> {:error, changeset}
     end
   end
+
+  @doc """
+  Saves the user avatar path.
+  """
+  def save_user_avatar_path(user, avatar_path) do
+    user
+    |> User.avatar_changeset(%{avatar_path: avatar_path})
+    |> Repo.update()
+  end
 end

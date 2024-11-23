@@ -79,7 +79,7 @@ defmodule SlaxWeb.UserResetPasswordLive do
     else
       socket
       |> put_flash(:error, "Reset password link is invalid or it has expired.")
-      |> redirect(to: ~p"/users/log_in")
+      |> redirect(to: ~p"/")
     end
   end
 

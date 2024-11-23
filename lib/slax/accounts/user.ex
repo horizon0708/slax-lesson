@@ -11,6 +11,7 @@ defmodule Slax.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
+    field :avatar_path, :string
 
     many_to_many :rooms, Room, join_through: RoomMembership
 
@@ -107,6 +108,14 @@ defmodule Slax.Accounts.User do
       %{changes: %{email: _}} = changeset -> changeset
       %{} = changeset -> add_error(changeset, :email, "did not change")
     end
+  end
+
+  @doc """
+  A user changeset for changing the avatar path.
+  """
+  def avatar_changeset(user, attrs \\ %{}) do
+    user
+    |> cast(attrs, [:avatar_path])
   end
 
   @doc """
